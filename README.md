@@ -30,15 +30,12 @@
 
 ---
 
----
-
-## 🚀 Local Setup
-
 ### Prerequisites
 - Node.js 18+
 - Python 3.11+
 - A free [Google Gemini API key]
 
+---
 
 ## 🧠 How It Works
 
