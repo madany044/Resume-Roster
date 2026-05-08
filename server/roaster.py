@@ -1,11 +1,12 @@
 import os
 import json
-from google import genai
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
 ROAST_PROMPT = """
 You are a brutally honest but constructive senior tech recruiter and resume expert.
@@ -56,12 +57,17 @@ Respond ONLY with the JSON. No markdown, no explanation, no code blocks.
 async def roast_resume(resume_text: str, job_description: str) -> dict:
     prompt = ROAST_PROMPT.format(resume=resume_text, jd=job_description)
 
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.7}
+    }
+
     try:
-        response = client.models.generate_content(
-            model="models/gemini-1.5-flash",
-            contents=prompt
-        )
-        raw = response.text.strip()
+        response = requests.post(GEMINI_URL, json=payload, timeout=60)
+        response.raise_for_status()
+
+        data = response.json()
+        raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
 
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -69,10 +75,11 @@ async def roast_resume(resume_text: str, job_description: str) -> dict:
                 raw = raw[4:]
             raw = raw.strip()
 
-        result = json.loads(raw)
-        return result
+        return json.loads(raw)
 
     except json.JSONDecodeError as e:
         raise ValueError(f"Gemini returned invalid JSON: {str(e)}")
+    except requests.HTTPError as e:
+        raise ValueError(f"Gemini HTTP error: {e.response.text}")
     except Exception as e:
         raise ValueError(f"Gemini API error: {str(e)}")
