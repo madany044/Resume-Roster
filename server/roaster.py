@@ -1,12 +1,11 @@
 import os
 import json
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 ROAST_PROMPT = """
 You are a brutally honest but constructive senior tech recruiter and resume expert.
@@ -58,10 +57,12 @@ async def roast_resume(resume_text: str, job_description: str) -> dict:
     prompt = ROAST_PROMPT.format(resume=resume_text, jd=job_description)
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         raw = response.text.strip()
 
-        # Strip markdown code blocks if model wraps them
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
