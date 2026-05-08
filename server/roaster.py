@@ -58,7 +58,7 @@ async def roast_resume(resume_text: str, job_description: str) -> dict:
 
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             contents=prompt
         )
         raw = response.text.strip()
