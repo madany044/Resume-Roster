@@ -2,6 +2,15 @@
 
 > Get your resume brutally honest feedback from AI. Section scores, targeted roasts, and instant rewrites — tailored to any job description.
 
+---
+
+## 🚀 Live Demo
+
+| | Link |
+|---|---|
+| 🌐 App | [resume-roster.vercel.app/.vercel.app](https://resume-roster.vercel.app/) |
+
+---
 
 ---
 
