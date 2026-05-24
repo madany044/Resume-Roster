@@ -57,7 +57,6 @@ export default function Home() {
           <span className="font-serif text-lg font-semibold text-roast-ink">Resume Roaster</span>
         </div>
         <span className="text-xs text-roast-muted bg-roast-surface2 px-3 py-1 rounded-full border border-roast-surface3">
-          Powered by Gemini AI
         </span>
       </nav>
 
