@@ -1,12 +1,12 @@
 import os
 import json
-import requests
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+client = Groq(api_key=os.environ["GROQ_API_KEY"])
+
 ROAST_PROMPT = """
 You are a brutally honest but constructive senior tech recruiter and resume expert.
 Your job is to roast and improve the given resume against the job description.
@@ -56,17 +56,14 @@ Respond ONLY with the JSON. No markdown, no explanation, no code blocks.
 async def roast_resume(resume_text: str, job_description: str) -> dict:
     prompt = ROAST_PROMPT.format(resume=resume_text, jd=job_description)
 
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7}
-    }
-
     try:
-        response = requests.post(GEMINI_URL, json=payload, timeout=60)
-        response.raise_for_status()
-
-        data = response.json()
-        raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        response = client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=2048,
+        )
+        raw = response.choices[0].message.content.strip()
 
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -77,8 +74,6 @@ async def roast_resume(resume_text: str, job_description: str) -> dict:
         return json.loads(raw)
 
     except json.JSONDecodeError as e:
-        raise ValueError(f"Gemini returned invalid JSON: {str(e)}")
-    except requests.HTTPError as e:
-        raise ValueError(f"Gemini HTTP error: {e.response.text}")
+        raise ValueError(f"Groq returned invalid JSON: {str(e)}")
     except Exception as e:
-        raise ValueError(f"Gemini API error: {str(e)}")
+        raise ValueError(f"Groq API error: {str(e)}")
