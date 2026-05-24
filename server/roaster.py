@@ -1,11 +1,12 @@
 import os
 import json
-from groq import Groq
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 ROAST_PROMPT = """
 You are a brutally honest but constructive senior tech recruiter and resume expert.
@@ -56,14 +57,24 @@ Respond ONLY with the JSON. No markdown, no explanation, no code blocks.
 async def roast_resume(resume_text: str, job_description: str) -> dict:
     prompt = ROAST_PROMPT.format(resume=resume_text, jd=job_description)
 
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "llama3-70b-8192",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7,
+        "max_tokens": 2048
+    }
+
     try:
-        response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=2048,
-        )
-        raw = response.choices[0].message.content.strip()
+        response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+
+        data = response.json()
+        raw = data["choices"][0]["message"]["content"].strip()
 
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -75,5 +86,7 @@ async def roast_resume(resume_text: str, job_description: str) -> dict:
 
     except json.JSONDecodeError as e:
         raise ValueError(f"Groq returned invalid JSON: {str(e)}")
+    except requests.HTTPError as e:
+        raise ValueError(f"Groq HTTP error: {e.response.text}")
     except Exception as e:
         raise ValueError(f"Groq API error: {str(e)}")
